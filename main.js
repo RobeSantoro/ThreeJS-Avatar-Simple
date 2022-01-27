@@ -117,6 +117,8 @@ gltfLoader.load('./models/Avatar.glb', (gltf) => {
   scene.add(model)
 
   const animations = gltf.animations
+  //console.log(animations)
+
   window.mixer = new THREE.AnimationMixer(model)
   mixer.clipAction(animations[1]).play()
 
@@ -134,15 +136,21 @@ gltfLoader.load('./models/Avatar.glb', (gltf) => {
 /*****************************************************************************************/
 
 // Create a light
-const light = new THREE.PointLight(0xffffff, 1, 100)
-light.position.set(1, 2, 2)
+const light = new THREE.DirectionalLight(0xffffff, 1)
+light.position.set(1, 3, 1)
 light.castShadow = true
 scene.add(light)
 
-light.shadow.mapSize.width = 512; // default
-light.shadow.mapSize.height = 512; // default
-light.shadow.camera.near = 0.5; // default
-light.shadow.camera.far = 500; // default
+const lightSize = 1
+
+light.shadow.mapSize.width = 512 // default
+light.shadow.mapSize.height = 512 // default
+light.shadow.camera.near = 0.5 // default
+light.shadow.camera.far = 500 // default
+light.shadow.camera.left = -lightSize
+light.shadow.camera.right = lightSize
+light.shadow.camera.top = lightSize
+light.shadow.camera.bottom = -lightSize
 
 //Create a helper for the shadow camera (optional)
 //const helper = new THREE.CameraHelper( light.shadow.camera );
