@@ -2,7 +2,6 @@
 import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-// Import GLTF and DRACO loader
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
@@ -29,10 +28,9 @@ scene.add(camera)
 
 // Orbit controls
 const controls = new OrbitControls(camera, canvas)
-// Set the lookat of the OrbitControls
 controls.target.set(0, 1, 0)
 controls.dampingFactor = 0.25
-controls.autoRotate = true
+// controls.autoRotate = true
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -40,7 +38,8 @@ const renderer = new THREE.WebGLRenderer({
   antialias: true,
   alpha: false,
   preserveDrawingBuffer: false,
-  premultipliedAlpha: false
+  premultipliedAlpha: false,
+  
 })
 
 renderer.setSize(sizes.width, sizes.height)
@@ -48,6 +47,9 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
 renderer.setClearColor(0x101010, 0)
 renderer.render(scene, camera)
 renderer.outputEncoding = THREE.sRGBEncoding
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+
 
 /*****************************************************************************************/
 /********************************************************************* ENVIRONMENT SETUP */
@@ -59,16 +61,14 @@ const envMap = textureLoader.load('./textures/envMap.jpg')
 envMap.mapping = THREE.EquirectangularReflectionMapping
 
 // Create a ground plane
-const geometry = new THREE.PlaneBufferGeometry(2, 2, 32, 32)
-const material = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
-  envMap: envMap,
-  metalness: 1,
-  roughness: 0.5,
-  envMapIntensity: 1,
-  side: THREE.DoubleSide
+const geometry = new THREE.PlaneBufferGeometry(20, 20, 1, 1)
+const material = new THREE.ShadowMaterial({
+  opacity: 1,
+  color: 0x000000,
+
 })
 const plane = new THREE.Mesh(geometry, material)
+plane.receiveShadow = true
 plane.rotation.x = -Math.PI / 2
 scene.add(plane)
 
@@ -76,9 +76,15 @@ scene.add(plane)
 /************************************************************************* TEXTURE SETUP */
 /*****************************************************************************************/
 
+// Create the Diffuse Map
 const DiffuseMap = new THREE.TextureLoader().load('./textures/Avatar_Diffuse.jpg');
 DiffuseMap.encoding = THREE.sRGBEncoding
 DiffuseMap.flipY = false;
+
+// Create the Normal map
+const NormalMap = new THREE.TextureLoader().load('./textures/Avatar_Normal.jpg');
+NormalMap.flipY = false;
+
 
 /*****************************************************************************************/
 /********************************************************************* GLTF MODEL LOADER */
@@ -96,18 +102,24 @@ let loaded = false
 gltfLoader.load('./models/Avatar.glb', (gltf) => {
 
   const model = gltf.scene
+
   model.traverse(child => {
     if (child.isMesh) {
       child.material.envMap = envMap
-      child.material.envMapIntensity = 1
+      child.material.envMapIntensity = 0.5
       child.material.map = DiffuseMap
+      child.material.normalMap = NormalMap      
+      child.material.normalScale = new THREE.Vector2(2, 2)    
+      child.castShadow = true  
     }
   })
+
   scene.add(model)
 
   const animations = gltf.animations
   window.mixer = new THREE.AnimationMixer(model)
   mixer.clipAction(animations[1]).play()
+
   loaded = true
 },
 
@@ -123,8 +135,18 @@ gltfLoader.load('./models/Avatar.glb', (gltf) => {
 
 // Create a light
 const light = new THREE.PointLight(0xffffff, 1, 100)
-light.position.set(10, 10, 10)
+light.position.set(1, 2, 2)
+light.castShadow = true
 scene.add(light)
+
+light.shadow.mapSize.width = 512; // default
+light.shadow.mapSize.height = 512; // default
+light.shadow.camera.near = 0.5; // default
+light.shadow.camera.far = 500; // default
+
+//Create a helper for the shadow camera (optional)
+//const helper = new THREE.CameraHelper( light.shadow.camera );
+//scene.add( helper );
 
 /*****************************************************************************************/
 /************************************************************* CLOCK TICK AND STATS ******/
