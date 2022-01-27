@@ -7,7 +7,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
 /****************************************************************************************/
-/*********************************************************************** THREE.JS SETUP */
+/***************************************************************** THREE.JS SCENE SETUP */
 /****************************************************************************************/
 
 // Create a scene
@@ -72,12 +72,11 @@ const plane = new THREE.Mesh(geometry, material)
 plane.rotation.x = -Math.PI / 2
 scene.add(plane)
 
-
 /*****************************************************************************************/
 /************************************************************************* TEXTURE SETUP */
 /*****************************************************************************************/
 
-let DiffuseMap = new THREE.TextureLoader().load('./textures/Avatar_Diffuse.jpg');
+const DiffuseMap = new THREE.TextureLoader().load('./textures/Avatar_Diffuse.jpg');
 DiffuseMap.encoding = THREE.sRGBEncoding
 DiffuseMap.flipY = false;
 
@@ -92,34 +91,31 @@ dracoLoader.setDecoderPath('./decoder/')
 const gltfLoader = new GLTFLoader()
 gltfLoader.setDRACOLoader(dracoLoader)
 
+let loaded = false
+
 gltfLoader.load('./models/Avatar.glb', (gltf) => {
 
-  let fileAnimations = gltf.animations
-
-  const Avatar = gltf.scene
-  Avatar.traverse(child => {
+  const model = gltf.scene
+  model.traverse(child => {
     if (child.isMesh) {
       child.material.envMap = envMap
       child.material.envMapIntensity = 1
       child.material.map = DiffuseMap
     }
-
   })
-  scene.add(Avatar)
+  scene.add(model)
 
-  
-
-
+  const animations = gltf.animations
+  window.mixer = new THREE.AnimationMixer(model)
+  mixer.clipAction(animations[1]).play()
+  loaded = true
 },
 
   // called as loading progresses
   (xhr) => { /*console.log((xhr.loaded / xhr.total * 100) + '% loaded');*/ },
   // called when loading has errors
-  (error) => { console.log(error); },
-  // called when loading is complete
-  (gltf) => { console.log('loaded'); }
+  (error) => { console.log(error); }
 )
-
 
 /*****************************************************************************************/
 /*************************************************************************** LIGHTS ******/
@@ -134,18 +130,22 @@ scene.add(light)
 /************************************************************* CLOCK TICK AND STATS ******/
 /*****************************************************************************************/
 
-// Initialize the main loop
-const clock = new THREE.Clock()
-let lastElapsedTime = 0
-let FPS = 0
-
 // Stats
 const stats = new Stats()
 stats.showPanel(0)
 document.body.appendChild(stats.dom)
 
+// Initialize the main loop
+const clock = new THREE.Clock()
+let lastElapsedTime = 0
+let FPS = 0
+
 // Create the main loop invoking the tick function
 const tick = () => {
+
+  // Call tick again on the next frame
+  requestAnimationFrame(tick)
+
   const elapsedTime = clock.getElapsedTime()
   const deltaTime = elapsedTime - lastElapsedTime
   lastElapsedTime = elapsedTime
@@ -159,11 +159,12 @@ const tick = () => {
   // Update stats
   stats.update()
 
+  // Mixer update
+  if (loaded == true) mixer.update(deltaTime)
+
   // Render
   renderer.render(scene, camera)
 
-  // Call tick again on the next frame
-  requestAnimationFrame(tick)
 }
 
 tick()
