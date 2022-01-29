@@ -120,7 +120,7 @@ gltfLoader.load('./models/Avatar.glb', (gltf) => {
   //console.log(animations)
 
   window.mixer = new THREE.AnimationMixer(model)
-  mixer.clipAction(animations[1]).play()
+  mixer.clipAction(animations[0 ]).play()
 
   loaded = true
 },
