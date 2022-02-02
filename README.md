@@ -1,4 +1,4 @@
-# ThreeJS-Avatar-Template
+# ThreeJS-Avatar
 
 !['Ready-Player-Me-Avatar-Social-Image'](./Ready-Player-Me-Avatar-Social-Image.jpg)
 
